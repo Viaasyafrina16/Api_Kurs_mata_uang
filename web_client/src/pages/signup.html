@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Signup - Open Currency Platform</title>
+</head>
+<body>
+  <h1>Signup</h1>
+
+  <form id="signupForm">
+    <div>
+      <label>Name</label><br />
+      <input id="name" required />
+    </div>
+    <br />
+    <div>
+      <label>Email</label><br />
+      <input id="email" type="email" required />
+    </div>
+    <br />
+    <div>
+      <label>Password</label><br />
+      <input id="password" type="password" required />
+    </div>
+    <br />
+    <button type="submit">Signup</button>
+  </form>
+
+  <p id="msg"></p>
+  <p><a href="/login">Login</a></p>
+
+  <script type="module">
+    import { apiFetch } from "/assets/main.js";
+
+    const form = document.getElementById("signupForm");
+    const msg = document.getElementById("msg");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "Signing up...";
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        await apiFetch("/auth/signup", {
+          method: "POST",
+          body: JSON.stringify({ name, email, password })
+        });
+
+        msg.textContent = "Signup success. Redirecting to login...";
+        setTimeout(() => (window.location.href = "/login"), 1000);
+      } catch (e) {
+        msg.textContent = e.message;
+      }
+    });
+  </script>
+</body>
+</html>

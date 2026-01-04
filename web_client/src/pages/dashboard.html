@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard - Open Currency Platform</title>
+</head>
+<body>
+  <h1>Dashboard (API Keys)</h1>
+
+  <button id="btnLogout">Logout</button>
+  <p><a href="/">Home</a> | <a href="/admin">Admin</a></p>
+
+  <h2>Create API Key</h2>
+  <input id="label" placeholder="label (optional)" />
+  <button id="btnCreate">Create Key</button>
+
+  <h3>New Key (copy & save now)</h3>
+  <pre id="newKey">-</pre>
+
+  <h2>My Keys</h2>
+  <button id="btnRefresh">Refresh List</button>
+  <div id="list"></div>
+
+  <p id="msg"></p>
+
+  <script type="module">
+    import { apiFetch, getToken, logout } from "/assets/main.js";
+
+    const msg = document.getElementById("msg");
+    const list = document.getElementById("list");
+    const newKey = document.getElementById("newKey");
+
+    // kalau belum login, balik ke login
+    if (!getToken()) {
+      window.location.href = "/login";
+    }
+
+    document.getElementById("btnLogout").addEventListener("click", () => logout());
+
+    async function refresh() {
+      msg.textContent = "Loading keys...";
+      list.innerHTML = "";
+      try {
+        const keys = await apiFetch("/keys", { method: "GET" });
+
+        if (!keys.length) {
+          list.innerHTML = "<p>No keys yet.</p>";
+        } else {
+          const ul = document.createElement("ul");
+
+          keys.forEach((k) => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+              <b>ID:</b> ${k.id}
+              | <b>prefix:</b> ${k.prefix}
+              | <b>label:</b> ${k.label ?? "-"}
+              | <b>status:</b> ${k.status}
+              <button data-id="${k.id}" ${k.status !== "active" ? "disabled" : ""}>Revoke</button>
+            `;
+            ul.appendChild(li);
+          });
+
+          list.appendChild(ul);
+
+          // handle revoke buttons
+          list.querySelectorAll("button[data-id]").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              const id = btn.getAttribute("data-id");
+              try {
+                await apiFetch(`/keys/${id}/revoke`, { method: "POST" });
+                msg.textContent = `Key ${id} revoked`;
+                await refresh();
+              } catch (err) {
+                msg.textContent = "Revoke failed: " + err.message;
+              }
+            });
+          });
+        }
+
+        msg.textContent = "OK";
+      } catch (err) {
+        msg.textContent = "Load failed: " + err.message;
+      }
+    }
+
+    document.getElementById("btnRefresh").addEventListener("click", refresh);
+
+    document.getElementById("btnCreate").addEventListener("click", async () => {
+      const label = document.getElementById("label").value.trim();
+      msg.textContent = "Creating key...";
+      newKey.textContent = "-";
+
+      try {
+        const data = await apiFetch("/keys", {
+          method: "POST",
+          body: JSON.stringify({ label })
+        });
+
+        newKey.textContent = data.api_key; // tampil sekali
+        msg.textContent = "Key created. Copy & save it now!";
+        await refresh();
+      } catch (err) {
+        msg.textContent = "Create failed: " + err.message;
+      }
+    });
+
+    // auto load
+    refresh();
+  </script>
+</body>
+</html>

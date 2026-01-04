@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Login - Open Currency Platform</title>
+</head>
+<body>
+  <h1>Login Dashboard</h1>
+
+  <form id="loginForm">
+    <div>
+      <label>Email</label><br />
+      <input id="email" type="email" required />
+    </div>
+    <br />
+    <div>
+      <label>Password</label><br />
+      <input id="password" type="password" required />
+    </div>
+    <br />
+    <button type="submit">Login</button>
+  </form>
+
+  <p id="msg"></p>
+
+  <p>
+    <a href="/">Back</a>
+  </p>
+
+  <script type="module">
+    import { apiFetch, saveToken } from "/assets/main.js";
+
+    const form = document.getElementById("loginForm");
+    const msg = document.getElementById("msg");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "Logging in...";
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const data = await apiFetch("/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email, password })
+        });
+
+        saveToken(data.token);
+        msg.textContent = "Login success! Redirecting...";
+        window.location.href = "/dashboard";
+      } catch (err) {
+        msg.textContent = "Login failed: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>

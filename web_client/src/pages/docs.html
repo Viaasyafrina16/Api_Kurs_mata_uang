@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>API Docs - Open Currency Platform</title>
+</head>
+<body>
+  <h1>API Documentation</h1>
+  <p>Gunakan <b>x-api-key</b> untuk akses endpoint currency.</p>
+
+  <h2>Currency API</h2>
+
+  <h3>GET /api/v1/currency/latest</h3>
+  <p>Query: base, symbols</p>
+  <pre>
+GET /api/v1/currency/latest?base=USD&symbols=IDR,EUR
+Header: x-api-key: sk_live_xxx
+  </pre>
+
+  <h3>GET /api/v1/currency/convert</h3>
+  <p>Query: from, to, amount</p>
+  <pre>
+GET /api/v1/currency/convert?from=USD&to=IDR&amount=10
+Header: x-api-key: sk_live_xxx
+  </pre>
+
+  <h2>Dashboard API Key</h2>
+  <p>Gunakan JWT Bearer token (login dulu).</p>
+  <pre>
+POST /auth/login
+POST /keys
+GET  /keys
+POST /keys/:id/revoke
+  </pre>
+
+  <p><a href="/">Back</a></p>
+</body>
+</html>

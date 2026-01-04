@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin - Currencies</title>
+</head>
+<body>
+  <h1>Admin Panel — Currencies</h1>
+
+  <button id="btnLogout">Logout</button>
+  <p><a href="/dashboard">Dashboard</a> | <a href="/">Home</a></p>
+
+  <h2>Create Currency</h2>
+  <input id="code" placeholder="Code (3 huruf, ex: MYR)" />
+  <input id="name" placeholder="Currency name" />
+  <button id="btnCreate">Create</button>
+
+  <h2>Currency List</h2>
+  <button id="btnRefresh">Refresh</button>
+  <div id="list"></div>
+
+  <p id="msg"></p>
+
+  <script type="module">
+    import { apiFetch, getToken, logout } from "/assets/main.js";
+
+    const msg = document.getElementById("msg");
+    const list = document.getElementById("list");
+
+    // harus login
+    if (!getToken()) {
+      window.location.href = "/login";
+    }
+
+    document.getElementById("btnLogout").addEventListener("click", logout);
+
+    async function refresh() {
+      msg.textContent = "Loading currencies...";
+      list.innerHTML = "";
+      try {
+        const data = await apiFetch("/admin/currencies");
+
+        const table = document.createElement("table");
+        table.border = "1";
+        table.cellPadding = "6";
+
+        table.innerHTML = `
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        `;
+
+        data.forEach((c) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${c.code}</td>
+            <td><input value="${c.name}" /></td>
+            <td>
+              <select>
+                <option value="active" ${c.status === "active" ? "selected" : ""}>active</option>
+                <option value="inactive" ${c.status === "inactive" ? "selected" : ""}>inactive</option>
+              </select>
+            </td>
+            <td>
+              <button class="update">Update</button>
+              <button class="delete">Delete</button>
+            </td>
+          `;
+
+          const [nameInput, statusSelect] = tr.querySelectorAll("input, select");
+
+          tr.querySelector(".update").onclick = async () => {
+            try {
+              await apiFetch(`/admin/currencies/${c.code}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                  name: nameInput.value,
+                  status: statusSelect.value
+                })
+              });
+              msg.textContent = `Updated ${c.code}`;
+            } catch (e) {
+              msg.textContent = e.message;
+            }
+          };
+
+          tr.querySelector(".delete").onclick = async () => {
+            if (!confirm(`Delete ${c.code}?`)) return;
+            try {
+              await apiFetch(`/admin/currencies/${c.code}`, {
+                method: "DELETE"
+              });
+              await refresh();
+            } catch (e) {
+              msg.textContent = e.message;
+            }
+          };
+
+          table.appendChild(tr);
+        });
+
+        list.appendChild(table);
+        msg.textContent = "OK";
+      } catch (e) {
+        msg.textContent = "Access denied or not admin";
+      }
+    }
+
+    document.getElementById("btnCreate").onclick = async () => {
+      const code = document.getElementById("code").value.trim();
+      const name = document.getElementById("name").value.trim();
+
+      try {
+        await apiFetch("/admin/currencies", {
+          method: "POST",
+          body: JSON.stringify({ code, name })
+        });
+        msg.textContent = "Currency created";
+        refresh();
+      } catch (e) {
+        msg.textContent = e.message;
+      }
+    };
+
+    document.getElementById("btnRefresh").onclick = refresh;
+
+    refresh();
+  </script>
+</body>
+</html>

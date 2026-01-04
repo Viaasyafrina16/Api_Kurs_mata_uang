@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Open Currency Platform</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="logo"></div>
+        <span>Open Currency</span>
+      </div>
+      <div class="menu">
+        <a href="/">Home</a>
+        <a href="/docs">Documentation</a>
+        <a href="/explorer">API Explorer</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/admin">Admin</a>
+        <a href="/signup">Signup</a>
+        <a href="/login">Login</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <h1>Open Currency Platform</h1>
+      <p>Platform Open API kurs mata uang: buat API key, coba endpoint lewat API Explorer, dan akses data kurs via JSON.</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Quick Start</h2>
+        <p>1) Signup/Login → 2) Create API key → 3) Call API (x-api-key)</p>
+        <div class="row" style="margin-top:12px">
+          <a class="badge" href="/docs">Read Docs</a>
+          <a class="badge" href="/explorer">Try Explorer</a>
+          <a class="badge" href="/dashboard">Manage Keys</a>
+        </div>
+
+        <div style="margin-top:12px" class="kbd">
+curl -H "x-api-key: sk_live_xxx" \
+"http://localhost:3000/api/v1/currency/convert?from=USD&to=IDR&amount=20"
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Endpoints</h2>
+        <p><b>Latest Rates</b>: ambil kurs terbaru.</p>
+        <p><b>Convert</b>: hitung hasil konversi.</p>
+        <div style="margin-top:12px" class="kbd">
+GET /api/v1/currency/latest?base=USD&symbols=IDR,EUR,SGD
+GET /api/v1/currency/convert?from=USD&to=IDR&amount=20
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      © 2026 Open Currency Platform • Client Web (Server 2)
+    </div>
+  </div>
+</body>
+</html>

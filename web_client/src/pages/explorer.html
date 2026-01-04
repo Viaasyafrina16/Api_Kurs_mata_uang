@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>API Explorer - Currency</title>
+  <link rel="stylesheet" href="/assets/style.css">
+
+</head>
+<body>
+  <h1>API Explorer — Currency</h1>
+  <p>Masukkan API key untuk mencoba endpoint langsung dari web.</p>
+
+  <p><a href="/">Home</a> | <a href="/dashboard">Dashboard</a> | <a href="/docs">Docs</a></p>
+
+  <h2>API Key</h2>
+  <input id="apiKey" placeholder="sk_live_..." style="width:420px" />
+  <button id="btnSave">Save Key</button>
+  <button id="btnClear">Clear</button>
+  <p id="msgKey"></p>
+
+  <hr/>
+
+  <h2>Latest Rates</h2>
+  <label>Base:</label>
+  <input id="base" value="USD" />
+  <label>Symbols:</label>
+  <input id="symbols" value="IDR,EUR,SGD" style="width:220px" />
+  <button id="btnLatest">Get Latest</button>
+
+  <div id="latestResult"></div>
+
+  <hr/>
+
+  <h2>Convert</h2>
+  <label>From:</label>
+  <input id="from" value="USD" />
+  <label>To:</label>
+  <input id="to" value="IDR" />
+  <label>Amount:</label>
+  <input id="amount" value="10" />
+  <button id="btnConvert">Convert</button>
+
+  <div id="convertResult"></div>
+
+  <hr/>
+  <h2>Raw JSON</h2>
+  <pre id="raw">-</pre>
+
+  <script type="module">
+    async function getBackendUrl() {
+      const res = await fetch("/config");
+      const data = await res.json();
+      return data.backendUrl;
+    }
+
+    function getSavedApiKey() {
+      return localStorage.getItem("demo_api_key") || "";
+    }
+    function saveApiKey(k) {
+      localStorage.setItem("demo_api_key", k);
+    }
+    function clearApiKey() {
+      localStorage.removeItem("demo_api_key");
+    }
+
+    const apiKeyInput = document.getElementById("apiKey");
+    const msgKey = document.getElementById("msgKey");
+    apiKeyInput.value = getSavedApiKey();
+
+    document.getElementById("btnSave").onclick = () => {
+      const k = apiKeyInput.value.trim();
+      if (!k) { msgKey.textContent = "API key kosong"; return; }
+      saveApiKey(k);
+      msgKey.textContent = "API key tersimpan (localStorage).";
+    };
+
+    document.getElementById("btnClear").onclick = () => {
+      clearApiKey();
+      apiKeyInput.value = "";
+      msgKey.textContent = "API key dihapus.";
+    };
+
+    async function callCurrencyApi(path) {
+      const baseUrl = await getBackendUrl();
+      const apiKey = apiKeyInput.value.trim() || getSavedApiKey();
+
+      if (!apiKey) throw new Error("Masukkan API key dulu.");
+
+      const res = await fetch(baseUrl + path, {
+        headers: { "x-api-key": apiKey }
+      });
+
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); } catch { json = { raw: text }; }
+
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      return json;
+    }
+
+    function renderRatesTable(data) {
+      const rates = data.rates || {};
+      const rows = Object.entries(rates)
+        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
+        .join("");
+
+      return `
+        <p><b>Base:</b> ${data.base} | <b>Date:</b> ${data.date}</p>
+        <table border="1" cellpadding="6">
+          <tr><th>Currency</th><th>Rate</th></tr>
+          ${rows}
+        </table>
+      `;
+    }
+
+    document.getElementById("btnLatest").onclick = async () => {
+      const base = document.getElementById("base").value.trim().toUpperCase();
+      const symbols = document.getElementById("symbols").value.trim().toUpperCase();
+
+      try {
+        const data = await callCurrencyApi(`/api/v1/currency/latest?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(symbols)}`);
+        document.getElementById("latestResult").innerHTML = renderRatesTable(data);
+        document.getElementById("raw").textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        document.getElementById("latestResult").innerHTML = `<p style="color:red">${e.message}</p>`;
+      }
+    };
+
+    document.getElementById("btnConvert").onclick = async () => {
+      const from = document.getElementById("from").value.trim().toUpperCase();
+      const to = document.getElementById("to").value.trim().toUpperCase();
+      const amount = document.getElementById("amount").value.trim();
+
+      try {
+        const data = await callCurrencyApi(`/api/v1/currency/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}`);
+        document.getElementById("convertResult").innerHTML = `
+          <p><b>${data.amount} ${data.from}</b> = <b>${data.result} ${data.to}</b></p>
+          <p>Rate: ${data.rate} | Date: ${data.date}</p>
+        `;
+        document.getElementById("raw").textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        document.getElementById("convertResult").innerHTML = `<p style="color:red">${e.message}</p>`;
+      }
+    };
+  </script>
+</body>
+</html>
