@@ -6,7 +6,8 @@ import {
   listCurrencies,
   createCurrency,
   updateCurrency,
-  deleteCurrency
+  deleteCurrency,
+  createCurrencyWithRate
 } from "../controllers/adminCurrenciesController.js";
 
 import {
@@ -23,6 +24,8 @@ router.get("/currencies", authJwt, requireAdmin, listCurrencies);
 router.post("/currencies", authJwt, requireAdmin, createCurrency);
 router.put("/currencies/:code", authJwt, requireAdmin, updateCurrency);
 router.delete("/currencies/:code", authJwt, requireAdmin, deleteCurrency);
+router.post("/currencies-with-rate", authJwt, requireAdmin, createCurrencyWithRate);
+
 
 // rates (ADMIN ONLY)
 router.get("/rates", authJwt, requireAdmin, adminListRates);
