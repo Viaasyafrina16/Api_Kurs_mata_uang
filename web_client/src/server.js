@@ -31,9 +31,13 @@ app.get("/explorer", (req, res) => sendPage(res, "explorer.html"));
 
 
 
+
 // endpoint kecil untuk expose backend url ke JS
 app.get("/config", (req, res) => {
   res.json({ backendUrl: BACKEND_URL });
+});
+app.get("/admin-rates", (req, res) => {
+  res.sendFile(path.join(__dirname, "pages", "admin-rates.html"));
 });
 
 app.listen(PORT, () => {

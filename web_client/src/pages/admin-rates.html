@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Rates</title>
+</head>
+<body>
+  <h1>Admin Panel — Rates</h1>
+
+  <p>
+    <a href="/">Home</a> |
+    <a href="/dashboard">Dashboard</a> |
+    <a href="/admin">Admin Currencies</a>
+  </p>
+
+  <button id="btnLogout">Logout</button>
+
+  <hr>
+
+  <h2>Create Rate</h2>
+  <div>
+    <input id="base_code" placeholder="BASE (USD)" />
+    <input id="quote_code" placeholder="QUOTE (IDR)" />
+    <input id="rate" placeholder="rate (15650.25)" type="number" step="any" />
+    <input id="rate_date" placeholder="YYYY-MM-DD" />
+    <button id="btnCreate">Create</button>
+  </div>
+
+  <p id="msg" style="color:green;"></p>
+  <p id="err" style="color:red;"></p>
+
+  <hr>
+
+  <h2>Rates List</h2>
+
+  <div>
+    Filter:
+    <input id="f_base" placeholder="base (optional)" />
+    <input id="f_quote" placeholder="quote (optional)" />
+    <input id="f_date" placeholder="date YYYY-MM-DD (optional)" />
+    <button id="btnRefresh">Refresh</button>
+  </div>
+
+  <br>
+
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Base</th>
+        <th>Quote</th>
+        <th>Rate</th>
+        <th>Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="ratesBody"></tbody>
+  </table>
+
+  <script src="/assets/main.js"></script>
+</body>
+</html>

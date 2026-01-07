@@ -34,9 +34,26 @@
 
     document.getElementById("btnLogout").addEventListener("click", logout);
 
+    function showError(e) {
+      // tampilkan error asli biar kelihatan penyebabnya
+      msg.textContent = `ERROR: ${e.message}`;
+
+      // kalau token invalid/expired → logout paksa
+      if (e.status === 401) {
+        msg.textContent = "Session expired / token invalid. Redirecting to login...";
+        setTimeout(() => logout(), 600);
+      }
+
+      // kalau 403 → berarti token valid tapi bukan admin
+      if (e.status === 403) {
+        msg.textContent = "Access denied (not admin). Login pakai akun admin.";
+      }
+    }
+
     async function refresh() {
       msg.textContent = "Loading currencies...";
       list.innerHTML = "";
+
       try {
         const data = await apiFetch("/admin/currencies");
 
@@ -57,7 +74,7 @@
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${c.code}</td>
-            <td><input value="${c.name}" /></td>
+            <td><input value="${c.name ?? ""}" /></td>
             <td>
               <select>
                 <option value="active" ${c.status === "active" ? "selected" : ""}>active</option>
@@ -70,7 +87,8 @@
             </td>
           `;
 
-          const [nameInput, statusSelect] = tr.querySelectorAll("input, select");
+          const nameInput = tr.querySelector("input");
+          const statusSelect = tr.querySelector("select");
 
           tr.querySelector(".update").onclick = async () => {
             try {
@@ -82,20 +100,21 @@
                 })
               });
               msg.textContent = `Updated ${c.code}`;
+              // opsional: refresh biar tampil paling update
+              await refresh();
             } catch (e) {
-              msg.textContent = e.message;
+              showError(e);
             }
           };
 
           tr.querySelector(".delete").onclick = async () => {
             if (!confirm(`Delete ${c.code}?`)) return;
             try {
-              await apiFetch(`/admin/currencies/${c.code}`, {
-                method: "DELETE"
-              });
+              await apiFetch(`/admin/currencies/${c.code}`, { method: "DELETE" });
+              msg.textContent = `Deleted ${c.code}`;
               await refresh();
             } catch (e) {
-              msg.textContent = e.message;
+              showError(e);
             }
           };
 
@@ -105,7 +124,7 @@
         list.appendChild(table);
         msg.textContent = "OK";
       } catch (e) {
-        msg.textContent = "Access denied or not admin";
+        showError(e);
       }
     }
 
@@ -119,9 +138,9 @@
           body: JSON.stringify({ code, name })
         });
         msg.textContent = "Currency created";
-        refresh();
+        await refresh();
       } catch (e) {
-        msg.textContent = e.message;
+        showError(e);
       }
     };
 
