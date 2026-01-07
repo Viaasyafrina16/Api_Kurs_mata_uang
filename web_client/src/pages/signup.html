@@ -27,13 +27,21 @@
   </form>
 
   <p id="msg"></p>
-  <p><a href="/login">Login</a></p>
+
+  <!-- Link login bawa next juga -->
+  <p><a id="linkLogin" href="/login">Login</a></p>
 
   <script type="module">
     import { apiFetch } from "/assets/main.js";
 
     const form = document.getElementById("signupForm");
     const msg = document.getElementById("msg");
+
+    // ambil next dari query param (default ke /explorer)
+    const next = new URLSearchParams(window.location.search).get("next") || "/explorer";
+
+    // set link login agar bawa next
+    document.getElementById("linkLogin").href = `/login?next=${encodeURIComponent(next)}`;
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -50,7 +58,9 @@
         });
 
         msg.textContent = "Signup success. Redirecting to login...";
-        setTimeout(() => (window.location.href = "/login"), 1000);
+        setTimeout(() => {
+          window.location.href = `/login?next=${encodeURIComponent(next)}`;
+        }, 800);
       } catch (e) {
         msg.textContent = e.message;
       }

@@ -17,6 +17,10 @@
   <h3>New Key (copy & save now)</h3>
   <pre id="newKey">-</pre>
 
+  <p>
+    <button id="btnUseExplorer" style="display:none;">Open Explorer (API key sudah tersimpan)</button>
+  </p>
+
   <h2>My Keys</h2>
   <button id="btnRefresh">Refresh List</button>
   <div id="list"></div>
@@ -29,13 +33,41 @@
     const msg = document.getElementById("msg");
     const list = document.getElementById("list");
     const newKey = document.getElementById("newKey");
+    const btnUseExplorer = document.getElementById("btnUseExplorer");
+    const btnCreate = document.getElementById("btnCreate");
+    const btnRefresh = document.getElementById("btnRefresh");
 
-    // kalau belum login, balik ke login
+    // next param: kalau dari explorer, biasanya next=/explorer
+const next = new URLSearchParams(window.location.search).get("next") || "/explorer";
+
+
+    // kalau belum login, balik ke login dan bawa next
     if (!getToken()) {
-      window.location.href = "/login";
+      window.location.href = `/login?next=${encodeURIComponent(next)}`;
     }
 
-    document.getElementById("btnLogout").addEventListener("click", () => logout());
+    document.getElementById("btnLogout").addEventListener("click", logout);
+
+    function saveKeyToExplorerStorage(apiKey) {
+      // explorer kamu pakai key ini
+      localStorage.setItem("demo_api_key", apiKey);
+    }
+
+    function goNext() {
+      window.location.href = next;
+    }
+
+    // tombol manual: buka explorer
+    btnUseExplorer.addEventListener("click", () => {
+      const key = (newKey.textContent || "").trim();
+      if (!key || key === "-") {
+        msg.textContent = "Belum ada key baru untuk disimpan.";
+        return;
+      }
+      saveKeyToExplorerStorage(key);
+      msg.textContent = "API key tersimpan. Opening explorer...";
+      setTimeout(goNext, 300);
+    });
 
     async function refresh() {
       msg.textContent = "Loading keys...";
@@ -43,7 +75,7 @@
       try {
         const keys = await apiFetch("/keys", { method: "GET" });
 
-        if (!keys.length) {
+        if (!Array.isArray(keys) || !keys.length) {
           list.innerHTML = "<p>No keys yet.</p>";
         } else {
           const ul = document.createElement("ul");
@@ -52,9 +84,9 @@
             const li = document.createElement("li");
             li.innerHTML = `
               <b>ID:</b> ${k.id}
-              | <b>prefix:</b> ${k.prefix}
+              | <b>prefix:</b> ${k.prefix ?? "-"}
               | <b>label:</b> ${k.label ?? "-"}
-              | <b>status:</b> ${k.status}
+              | <b>status:</b> ${k.status ?? "-"}
               <button data-id="${k.id}" ${k.status !== "active" ? "disabled" : ""}>Revoke</button>
             `;
             ul.appendChild(li);
@@ -62,10 +94,11 @@
 
           list.appendChild(ul);
 
-          // handle revoke buttons
           list.querySelectorAll("button[data-id]").forEach((btn) => {
             btn.addEventListener("click", async () => {
               const id = btn.getAttribute("data-id");
+              if (!confirm(`Revoke key id=${id}?`)) return;
+
               try {
                 await apiFetch(`/keys/${id}/revoke`, { method: "POST" });
                 msg.textContent = `Key ${id} revoked`;
@@ -83,12 +116,26 @@
       }
     }
 
-    document.getElementById("btnRefresh").addEventListener("click", refresh);
+    btnRefresh.addEventListener("click", refresh);
 
-    document.getElementById("btnCreate").addEventListener("click", async () => {
+    // ====== FIX utama: anti double submit + tidak hide tombol explorer lagi ======
+    let creating = false;
+
+    btnCreate.addEventListener("click", async () => {
+      if (creating) return;
+      creating = true;
+
+      btnCreate.disabled = true;
+      btnCreate.textContent = "Creating...";
+
       const label = document.getElementById("label").value.trim();
+
       msg.textContent = "Creating key...";
       newKey.textContent = "-";
+
+      // Jangan hide tombol, cukup disable dulu
+      btnUseExplorer.style.display = "none";
+      btnUseExplorer.disabled = true;
 
       try {
         const data = await apiFetch("/keys", {
@@ -96,15 +143,48 @@
           body: JSON.stringify({ label })
         });
 
-        newKey.textContent = data.api_key; // tampil sekali
-        msg.textContent = "Key created. Copy & save it now!";
+        // pastikan field sesuai backend: biasanya "api_key"
+        const apiKey = data.api_key || data.key || data.apiKey;
+
+        if (!apiKey) {
+          msg.textContent = "Key dibuat, tapi response tidak mengandung api_key.";
+          await refresh();
+          return;
+        }
+
+        newKey.textContent = apiKey;
+
+        // simpan otomatis ke explorer storage
+        saveKeyToExplorerStorage(apiKey);
+
+        // tampilkan tombol untuk ke explorer, dan BIARKAN tampil
+        btnUseExplorer.style.display = "inline-block";
+        btnUseExplorer.disabled = false;
+
+        // label tombol sesuai tujuan
+        if (next === "/explorer") {
+          btnUseExplorer.textContent = "Open Explorer (API key sudah tersimpan)";
+          msg.textContent = "Key created & saved. Klik tombol Open Explorer.";
+        } else {
+          btnUseExplorer.textContent = "Go to next page (API key sudah tersimpan)";
+          msg.textContent = "Key created & saved. Klik tombol untuk lanjut.";
+        }
+
         await refresh();
+
+        // ❌ IMPORTANT: Jangan auto redirect biar tombol tidak “hilang” karena pindah halaman
+        // Kalau kamu tetap mau auto redirect, uncomment baris ini:
+        // setTimeout(goNext, 800);
+
       } catch (err) {
         msg.textContent = "Create failed: " + err.message;
+      } finally {
+        creating = false;
+        btnCreate.disabled = false;
+        btnCreate.textContent = "Create Key";
       }
     });
 
-    // auto load
     refresh();
   </script>
 </body>

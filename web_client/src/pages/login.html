@@ -19,6 +19,9 @@
     </div>
     <br />
     <button type="submit">Login</button>
+
+    <!-- tombol sign up -->
+    <button type="button" id="btnSignup" style="margin-left:8px;">Sign Up</button>
   </form>
 
   <p id="msg"></p>
@@ -32,6 +35,14 @@
 
     const form = document.getElementById("loginForm");
     const msg = document.getElementById("msg");
+
+    // default redirect setelah login = /explorer
+    const next = new URLSearchParams(window.location.search).get("next") || "/explorer";
+
+    document.getElementById("btnSignup").onclick = () => {
+      // bawa next juga ke signup
+      window.location.href = `/signup?next=${encodeURIComponent(next)}`;
+    };
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -48,7 +59,7 @@
 
         saveToken(data.token);
         msg.textContent = "Login success! Redirecting...";
-        window.location.href = "/dashboard";
+        window.location.href = next;
       } catch (err) {
         msg.textContent = "Login failed: " + err.message;
       }

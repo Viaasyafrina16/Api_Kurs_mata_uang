@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>API Explorer - Currency</title>
   <link rel="stylesheet" href="/assets/style.css">
-
 </head>
 <body>
   <h1>API Explorer — Currency</h1>
@@ -13,9 +12,16 @@
   <p><a href="/">Home</a> | <a href="/dashboard">Dashboard</a> | <a href="/docs">Docs</a></p>
 
   <h2>API Key</h2>
-  <input id="apiKey" placeholder="sk_live_..." style="width:420px" />
-  <button id="btnSave">Save Key</button>
-  <button id="btnClear">Clear</button>
+
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <input id="apiKey" placeholder="sk_live_..." style="width:420px" />
+    <button id="btnSave">Save Key</button>
+    <button id="btnClear">Clear</button>
+
+    <!-- ✅ tombol baru -->
+    <button id="btnCreateKey" style="display:none;">Create API Key</button>
+  </div>
+
   <p id="msgKey"></p>
 
   <hr/>
@@ -65,26 +71,47 @@
 
     const apiKeyInput = document.getElementById("apiKey");
     const msgKey = document.getElementById("msgKey");
-    apiKeyInput.value = getSavedApiKey();
+    const btnCreateKey = document.getElementById("btnCreateKey");
+
+    function updateApiKeyUi() {
+      const saved = getSavedApiKey();
+      apiKeyInput.value = saved;
+
+      if (!saved) {
+        btnCreateKey.style.display = "inline-block";
+        msgKey.textContent = "API key belum ada. Klik 'Create API Key' untuk login dan buat key.";
+      } else {
+        btnCreateKey.style.display = "none";
+        msgKey.textContent = "API key tersimpan (localStorage).";
+      }
+    }
+
+    // load awal
+    updateApiKeyUi();
 
     document.getElementById("btnSave").onclick = () => {
       const k = apiKeyInput.value.trim();
       if (!k) { msgKey.textContent = "API key kosong"; return; }
       saveApiKey(k);
-      msgKey.textContent = "API key tersimpan (localStorage).";
+      updateApiKeyUi();
     };
 
     document.getElementById("btnClear").onclick = () => {
       clearApiKey();
       apiKeyInput.value = "";
-      msgKey.textContent = "API key dihapus.";
+      updateApiKeyUi();
+    };
+
+    // ✅ kalau belum punya API key → arahkan login dulu, habis itu ke dashboard
+    btnCreateKey.onclick = () => {
+      window.location.href = "/login?next=/dashboard";
     };
 
     async function callCurrencyApi(path) {
       const baseUrl = await getBackendUrl();
       const apiKey = apiKeyInput.value.trim() || getSavedApiKey();
 
-      if (!apiKey) throw new Error("Masukkan API key dulu.");
+      if (!apiKey) throw new Error("Masukkan API key dulu atau klik 'Create API Key'.");
 
       const res = await fetch(baseUrl + path, {
         headers: { "x-api-key": apiKey }
