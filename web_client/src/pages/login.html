@@ -1,52 +1,84 @@
 <!doctype html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Open Currency Platform</title>
+  <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-  <h1>Login Dashboard</h1>
+  <div class="login-container">
+    <div class="card">
+      <div class="header">
+        <h1 id="title">🔐 Login</h1>
+        <p id="subtitle">Masuk ke akun Currency Platform Anda</p>
+      </div>
 
-  <form id="loginForm">
-    <div>
-      <label>Email</label><br />
-      <input id="email" type="email" required />
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">📧 Email</label>
+          <input id="email" type="email" placeholder="nama@email.com" required />
+        </div>
+
+        <div class="form-group">
+          <label for="password">🔒 Password</label>
+          <input id="password" type="password" placeholder="Masukkan password Anda" required />
+        </div>
+
+        <div class="button-group">
+          <button type="submit" id="btnLogin">Login</button>
+          <button type="button" id="btnSignup" class="secondary">Sign Up</button>
+        </div>
+      </form>
+
+      <div id="msg" class="message"></div>
     </div>
-    <br />
-    <div>
-      <label>Password</label><br />
-      <input id="password" type="password" required />
+
+    <div class="back-link">
+      <a href="/">← Kembali ke Beranda</a>
     </div>
-    <br />
-    <button type="submit">Login</button>
-
-    <!-- tombol sign up -->
-    <button type="button" id="btnSignup" style="margin-left:8px;">Sign Up</button>
-  </form>
-
-  <p id="msg"></p>
-
-  <p>
-    <a href="/">Back</a>
-  </p>
+  </div>
 
   <script type="module">
-    import { apiFetch, saveToken } from "/assets/main.js";
+    import { apiFetch, saveToken, getRoleFromToken, logout } from "/assets/main.js";
 
-    const form = document.getElementById("loginForm");
     const msg = document.getElementById("msg");
+    const form = document.getElementById("loginForm");
+    const btnSignup = document.getElementById("btnSignup");
+    const btnLogin = document.getElementById("btnLogin");
+    const title = document.getElementById("title");
+    const subtitle = document.getElementById("subtitle");
 
-    // default redirect setelah login = /explorer
-    const next = new URLSearchParams(window.location.search).get("next") || "/explorer";
+    const qs = new URLSearchParams(window.location.search);
+    const adminMode = qs.get("admin") === "1";
+    const next = qs.get("next"); // optional
 
-    document.getElementById("btnSignup").onclick = () => {
-      // bawa next juga ke signup
-      window.location.href = `/signup?next=${encodeURIComponent(next)}`;
+    function showMessage(text, type = "info") {
+      msg.textContent = text;
+      msg.className = `message show ${type}`;
+    }
+
+    // UI mode
+    if (adminMode) {
+      title.textContent = "🔐 Login Admin";
+      subtitle.textContent = "Masuk sebagai Administrator";
+      btnSignup.style.display = "none";
+    } else {
+      title.textContent = "🔐 Login";
+      subtitle.textContent = "Masuk ke akun Currency Platform Anda";
+      btnSignup.style.display = "inline-block";
+    }
+
+    btnSignup.onclick = () => {
+      window.location.href = `/signup?next=${encodeURIComponent(next || "/dashboard")}`;
     };
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      msg.textContent = "Logging in...";
+
+      const originalText = btnLogin.textContent;
+      btnLogin.textContent = "Logging in...";
+      btnLogin.disabled = true;
 
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
@@ -57,11 +89,41 @@
           body: JSON.stringify({ email, password })
         });
 
+        if (!data?.token) {
+          showMessage("❌ Login gagal: token tidak ditemukan.", "error");
+          btnLogin.textContent = originalText;
+          btnLogin.disabled = false;
+          return;
+        }
+
+        // simpan token
         saveToken(data.token);
-        msg.textContent = "Login success! Redirecting...";
-        window.location.href = next;
+
+        // ambil role dari token yang sudah tersimpan
+        const role = getRoleFromToken();
+
+        // adminMode: wajib admin
+        if (adminMode && role !== "admin") {
+          showMessage("❌ Akun ini bukan admin.", "error");
+          setTimeout(() => logout(), 400);
+          btnLogin.textContent = originalText;
+          btnLogin.disabled = false;
+          return;
+        }
+
+        // redirect sesuai role
+        if (role === "admin") {
+          showMessage("✅ Login admin berhasil! Redirecting...", "success");
+          window.location.assign("/admin");
+        } else {
+          const target = next || "/dashboard";
+          showMessage("✅ Login berhasil! Redirecting...", "success");
+          window.location.assign(target);
+        }
       } catch (err) {
-        msg.textContent = "Login failed: " + err.message;
+        showMessage("❌ Login gagal: " + err.message, "error");
+        btnLogin.textContent = originalText;
+        btnLogin.disabled = false;
       }
     });
   </script>

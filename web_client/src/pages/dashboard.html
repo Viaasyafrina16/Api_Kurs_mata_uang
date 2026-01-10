@@ -1,141 +1,163 @@
 <!doctype html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Open Currency Platform</title>
+  <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-  <h1>Dashboard (API Keys)</h1>
+  <div class="container">
+    <div class="header">
+      <div class="header-top">
+        <h1>📊 Dashboard</h1>
+        <div class="nav-links">
+          <a href="/">🏠 Home</a>
+          <a href="/explorer">🌐 Explorer</a>
+          <button id="btnLogout" class="btn-logout">🚪 Logout</button>
+        </div>
+      </div>
+      <div class="stats-bar">
+        <strong>📈 Total kunjungan halaman:</strong>
+        <span class="count" id="visitCount">0</span>
+      </div>
+    </div>
 
-  <button id="btnLogout">Logout</button>
-  <p><a href="/">Home</a> | <a href="/admin">Admin</a></p>
+    <div class="card">
+      <h2>📊 Kuota API Key</h2>
+      <div class="quota-grid">
+        <div class="quota-item">
+          <label>Kuota per API Key</label>
+          <div class="value" id="quotaLimitText">100</div>
+          <small style="color:#666;">total request (tidak reset harian)</small>
+        </div>
+        <div class="quota-item">
+          <label>Sisa Kuota</label>
+          <div class="value" id="quotaRemainText">-</div>
+          <small style="color:#666;">untuk API key terakhir</small>
+        </div>
+      </div>
+      <p id="quotaMsg" class="message error" style="display:none;"></p>
+    </div>
 
-  <h2>Create API Key</h2>
-  <input id="label" placeholder="label (optional)" />
-  <button id="btnCreate">Create Key</button>
+    <div class="card">
+      <h2>🔑 Buat API Key Baru</h2>
+      <div class="form-group">
+        <label for="label">Label (opsional)</label>
+        <input id="label" placeholder="Contoh: Production API, Testing Key, dll..." />
+      </div>
 
-  <h3>New Key (copy & save now)</h3>
-  <pre id="newKey">-</pre>
+      <button id="btnCreate">✨ Create Key</button>
 
-  <p>
-    <button id="btnUseExplorer" style="display:none;">Open Explorer (API key sudah tersimpan)</button>
-  </p>
+      <div style="margin-top:25px;">
+        <h3 style="color:#2d3748; font-size:1.1rem; margin-bottom:10px;">🔐 New Key (simpan sekarang)</h3>
+        <div class="key-display" id="newKey">-</div>
 
-  <h2>My Keys</h2>
-  <button id="btnRefresh">Refresh List</button>
-  <div id="list"></div>
+        <div class="button-group">
+          <button id="btnOpenExplorer" class="success" style="display:none;">
+            🚀 Buka Explorer (API key tersimpan)
+          </button>
+        </div>
+      </div>
 
-  <p id="msg"></p>
+      <p id="msg"></p>
+    </div>
+  </div>
 
   <script type="module">
     import { apiFetch, getToken, logout } from "/assets/main.js";
 
     const msg = document.getElementById("msg");
-    const list = document.getElementById("list");
     const newKey = document.getElementById("newKey");
-    const btnUseExplorer = document.getElementById("btnUseExplorer");
-    const btnCreate = document.getElementById("btnCreate");
-    const btnRefresh = document.getElementById("btnRefresh");
+    const btnOpenExplorer = document.getElementById("btnOpenExplorer");
+    const visitCount = document.getElementById("visitCount");
 
-    // next param: kalau dari explorer, biasanya next=/explorer
-const next = new URLSearchParams(window.location.search).get("next") || "/explorer";
+    const quotaLimitText = document.getElementById("quotaLimitText");
+    const quotaRemainText = document.getElementById("quotaRemainText");
+    const quotaMsg = document.getElementById("quotaMsg");
 
+    // visit counter
+    (function countVisit() {
+      const key = "visits_user_dashboard";
+      const n = Number(localStorage.getItem(key) || "0") + 1;
+      localStorage.setItem(key, String(n));
+      visitCount.textContent = String(n);
+    })();
 
-    // kalau belum login, balik ke login dan bawa next
+    // guard login
     if (!getToken()) {
-      window.location.href = `/login?next=${encodeURIComponent(next)}`;
+      window.location.href = "/login?next=/dashboard";
     }
 
     document.getElementById("btnLogout").addEventListener("click", logout);
 
-    function saveKeyToExplorerStorage(apiKey) {
-      // explorer kamu pakai key ini
+    async function getBackendUrl() {
+      const r = await fetch("/config");
+      const j = await r.json();
+      return j.backendUrl;
+    }
+
+    function persistLastApiKey(apiKey) {
       localStorage.setItem("demo_api_key", apiKey);
+      sessionStorage.setItem("last_created_api_key", apiKey);
     }
 
-    function goNext() {
-      window.location.href = next;
-    }
-
-    // tombol manual: buka explorer
-    btnUseExplorer.addEventListener("click", () => {
-      const key = (newKey.textContent || "").trim();
-      if (!key || key === "-") {
-        msg.textContent = "Belum ada key baru untuk disimpan.";
+    async function refreshQuotaForKey(apiKey) {
+      if (!apiKey) {
+        quotaRemainText.textContent = "-";
+        quotaMsg.style.display = "none";
         return;
       }
-      saveKeyToExplorerStorage(key);
-      msg.textContent = "API key tersimpan. Opening explorer...";
-      setTimeout(goNext, 300);
-    });
 
-    async function refresh() {
-      msg.textContent = "Loading keys...";
-      list.innerHTML = "";
       try {
-        const keys = await apiFetch("/keys", { method: "GET" });
+        const backendUrl = await getBackendUrl();
+        const r = await fetch(`${backendUrl}/api/v1/currency/quota`, {
+          headers: { "x-api-key": apiKey }
+        });
+        const data = await r.json();
 
-        if (!Array.isArray(keys) || !keys.length) {
-          list.innerHTML = "<p>No keys yet.</p>";
-        } else {
-          const ul = document.createElement("ul");
-
-          keys.forEach((k) => {
-            const li = document.createElement("li");
-            li.innerHTML = `
-              <b>ID:</b> ${k.id}
-              | <b>prefix:</b> ${k.prefix ?? "-"}
-              | <b>label:</b> ${k.label ?? "-"}
-              | <b>status:</b> ${k.status ?? "-"}
-              <button data-id="${k.id}" ${k.status !== "active" ? "disabled" : ""}>Revoke</button>
-            `;
-            ul.appendChild(li);
-          });
-
-          list.appendChild(ul);
-
-          list.querySelectorAll("button[data-id]").forEach((btn) => {
-            btn.addEventListener("click", async () => {
-              const id = btn.getAttribute("data-id");
-              if (!confirm(`Revoke key id=${id}?`)) return;
-
-              try {
-                await apiFetch(`/keys/${id}/revoke`, { method: "POST" });
-                msg.textContent = `Key ${id} revoked`;
-                await refresh();
-              } catch (err) {
-                msg.textContent = "Revoke failed: " + err.message;
-              }
-            });
-          });
+        if (!r.ok) {
+          quotaMsg.textContent = "⚠️ " + (data?.error || "Gagal cek kuota");
+          quotaMsg.style.display = "block";
+          quotaRemainText.textContent = "-";
+          return;
         }
 
-        msg.textContent = "OK";
-      } catch (err) {
-        msg.textContent = "Load failed: " + err.message;
+        // ✅ field baru
+        quotaLimitText.textContent = String(data.limit_total ?? 100);
+        quotaRemainText.textContent = String(data.remaining_total ?? "-");
+        quotaMsg.style.display = "none";
+      } catch {
+        quotaMsg.textContent = "⚠️ Gagal cek kuota (network error)";
+        quotaMsg.style.display = "block";
+        quotaRemainText.textContent = "-";
       }
     }
 
-    btnRefresh.addEventListener("click", refresh);
+    async function showLastKeyUI() {
+      const last = sessionStorage.getItem("last_created_api_key");
+      if (last && last.trim()) {
+        newKey.textContent = last;
+        btnOpenExplorer.style.display = "inline-block";
+        await refreshQuotaForKey(last);
+      } else {
+        newKey.textContent = "-";
+        btnOpenExplorer.style.display = "none";
+        await refreshQuotaForKey(null);
+      }
+    }
 
-    // ====== FIX utama: anti double submit + tidak hide tombol explorer lagi ======
-    let creating = false;
+    btnOpenExplorer.addEventListener("click", () => {
+      window.location.href = "/explorer";
+    });
 
-    btnCreate.addEventListener("click", async () => {
-      if (creating) return;
-      creating = true;
-
-      btnCreate.disabled = true;
-      btnCreate.textContent = "Creating...";
-
-      const label = document.getElementById("label").value.trim();
+    document.getElementById("btnCreate").addEventListener("click", async () => {
+      const labelInput = document.getElementById("label");
+      const label = labelInput.value.trim();
 
       msg.textContent = "Creating key...";
-      newKey.textContent = "-";
-
-      // Jangan hide tombol, cukup disable dulu
-      btnUseExplorer.style.display = "none";
-      btnUseExplorer.disabled = true;
+      const btn = document.getElementById("btnCreate");
+      btn.disabled = true;
 
       try {
         const data = await apiFetch("/keys", {
@@ -143,49 +165,29 @@ const next = new URLSearchParams(window.location.search).get("next") || "/explor
           body: JSON.stringify({ label })
         });
 
-        // pastikan field sesuai backend: biasanya "api_key"
-        const apiKey = data.api_key || data.key || data.apiKey;
-
+        const apiKey = data.api_key;
         if (!apiKey) {
           msg.textContent = "Key dibuat, tapi response tidak mengandung api_key.";
-          await refresh();
           return;
         }
 
+        persistLastApiKey(apiKey);
+
         newKey.textContent = apiKey;
+        btnOpenExplorer.style.display = "inline-block";
 
-        // simpan otomatis ke explorer storage
-        saveKeyToExplorerStorage(apiKey);
+        labelInput.value = "";
+        await refreshQuotaForKey(apiKey);
 
-        // tampilkan tombol untuk ke explorer, dan BIARKAN tampil
-        btnUseExplorer.style.display = "inline-block";
-        btnUseExplorer.disabled = false;
-
-        // label tombol sesuai tujuan
-        if (next === "/explorer") {
-          btnUseExplorer.textContent = "Open Explorer (API key sudah tersimpan)";
-          msg.textContent = "Key created & saved. Klik tombol Open Explorer.";
-        } else {
-          btnUseExplorer.textContent = "Go to next page (API key sudah tersimpan)";
-          msg.textContent = "Key created & saved. Klik tombol untuk lanjut.";
-        }
-
-        await refresh();
-
-        // ❌ IMPORTANT: Jangan auto redirect biar tombol tidak “hilang” karena pindah halaman
-        // Kalau kamu tetap mau auto redirect, uncomment baris ini:
-        // setTimeout(goNext, 800);
-
+        msg.textContent = "✅ Key created & saved. Klik 'Buka Explorer'.";
       } catch (err) {
-        msg.textContent = "Create failed: " + err.message;
+        msg.textContent = "❌ Create failed: " + err.message;
       } finally {
-        creating = false;
-        btnCreate.disabled = false;
-        btnCreate.textContent = "Create Key";
+        btn.disabled = false;
       }
     });
 
-    refresh();
+    await showLastKeyUI();
   </script>
 </body>
 </html>

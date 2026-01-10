@@ -1,8 +1,35 @@
 import pool from "../config/db.js";
 
-// ambil rate terbaru untuk base dan daftar symbols
+// helper: pastikan currency ada & active
+async function assertCurrencyActive(code) {
+  const [rows] = await pool.query(
+    "SELECT code, status FROM currencies WHERE code = ? LIMIT 1",
+    [code]
+  );
+
+  if (!rows.length) {
+    const err = new Error(`Currency ${code} tidak ditemukan`);
+    err.status = 404;
+    throw err;
+  }
+
+  if (rows[0].status !== "active") {
+    const err = new Error(`Currency ${code} sedang inactive`);
+    err.status = 403;
+    throw err;
+  }
+}
+
+// ambil rate terbaru untuk base dan daftar symbols (HANYA ACTIVE)
 export async function getLatestRates({ base, symbols }) {
+  // base harus active
+  await assertCurrencyActive(base);
+
+  // symbols wajib array
+  if (!Array.isArray(symbols) || symbols.length === 0) return null;
+
   // cari tanggal terbaru yang ada untuk base
+  // NOTE: tidak perlu filter quote di sini, cukup ambil max untuk base
   const [latestRows] = await pool.query(
     "SELECT MAX(rate_date) AS latest_date FROM currency_rates WHERE base_code = ?",
     [base]
@@ -12,33 +39,48 @@ export async function getLatestRates({ base, symbols }) {
   if (!latestDate) return null;
 
   // ambil rates untuk tanggal itu
+  // ✅ hanya quote yang ACTIVE
+  // ✅ kalau ada symbol yang inactive, otomatis gak ikut keluar
   const [rows] = await pool.query(
-    `SELECT quote_code, rate
-     FROM currency_rates
-     WHERE base_code = ? AND rate_date = ? AND quote_code IN (?)`,
+    `
+    SELECT cr.quote_code, cr.rate
+    FROM currency_rates cr
+    JOIN currencies cq
+      ON cq.code = cr.quote_code
+     AND cq.status = 'active'
+    WHERE cr.base_code = ?
+      AND cr.rate_date = ?
+      AND cr.quote_code IN (?)
+    `,
     [base, latestDate, symbols]
   );
 
+  // kalau semua symbol ternyata inactive, rows bisa kosong -> tetap balikin date+rates kosong
   return { date: latestDate, rates: rows };
 }
 
-// ambil rate untuk convert pada tanggal terbaru (atau tanggal tertentu nanti)
+// ambil rate untuk convert pada tanggal terbaru (HANYA ACTIVE)
 export async function getRateLatest({ from, to }) {
-  const [latestRows] = await pool.query(
-    "SELECT MAX(rate_date) AS latest_date FROM currency_rates WHERE base_code = ? AND quote_code = ?",
-    [from, to]
-  );
+  // from & to harus active
+  await assertCurrencyActive(from);
+  await assertCurrencyActive(to);
 
-  const latestDate = latestRows[0]?.latest_date;
-  if (!latestDate) return null;
-
+  // ambil rate terbaru untuk pasangan from->to
   const [rows] = await pool.query(
-    "SELECT rate, rate_date FROM currency_rates WHERE base_code = ? AND quote_code = ? AND rate_date = ? LIMIT 1",
-    [from, to, latestDate]
+    `
+    SELECT cr.rate, cr.rate_date
+    FROM currency_rates cr
+    WHERE cr.base_code = ?
+      AND cr.quote_code = ?
+    ORDER BY cr.rate_date DESC
+    LIMIT 1
+    `,
+    [from, to]
   );
 
   return rows[0] || null;
 }
+
 // ===== ADMIN CRUD =====
 export async function listRates({ base, quote, date }) {
   let sql = `
@@ -81,4 +123,3 @@ export async function deleteRateById(id) {
   const [result] = await pool.query(sql, [id]);
   return result.affectedRows;
 }
-

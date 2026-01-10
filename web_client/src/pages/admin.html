@@ -2,27 +2,35 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Admin - Currencies</title>
+  <title>Admin Panel - Currencies</title>
+  <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
   <h1>Admin Panel — Currencies</h1>
 
+  <p>
+    <a href="/">Home</a> 
+    
+   
+  </p>
+
+  <p><b>Total kunjungan halaman Admin (browser ini):</b> <span id="visitCount">0</span></p>
+
   <button id="btnLogout">Logout</button>
-  <p><a href="/dashboard">Dashboard</a> | <a href="/">Home</a></p>
+
+  <hr/>
 
   <h2>Create Currency + Initial Rate</h2>
   <input id="code" placeholder="Code (3 huruf, ex: BND)" />
   <input id="name" placeholder="Currency name" />
-
   <br /><br />
-
-  <!-- Rate awal -->
   <input id="base_code" placeholder="Base code (default USD)" value="USD" />
   <input id="rate" placeholder="Rate (contoh: 1.34)" />
-  <input id="rate_date" placeholder="Rate date (YYYY-MM-DD)" value="2026-01-04" />
-
+  <input id="rate_date" placeholder="Rate date (YYYY-MM-DD)" />
   <br /><br />
   <button id="btnCreate">Create (with rate)</button>
+
+  <hr/>
 
   <h2>Currency List</h2>
   <button id="btnRefresh">Refresh</button>
@@ -35,24 +43,50 @@
 
     const msg = document.getElementById("msg");
     const list = document.getElementById("list");
+    const visitCount = document.getElementById("visitCount");
 
-    // harus login
-    if (!getToken()) {
-      window.location.href = "/login";
+    // visit counter
+    (function countVisit() {
+      const key = "visits_admin_panel";
+      const n = Number(localStorage.getItem(key) || "0") + 1;
+      localStorage.setItem(key, String(n));
+      visitCount.textContent = String(n);
+    })();
+
+    function parseJwt(token) {
+      try {
+        const payload = token.split(".")[1];
+        const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+        return JSON.parse(decodeURIComponent(escape(json)));
+      } catch {
+        return null;
+      }
+    }
+
+    function requireAdminOrRedirect() {
+      const token = getToken();
+      if (!token) {
+        window.location.href = "/login?admin=1&next=/admin";
+        return false;
+      }
+      const payload = parseJwt(token);
+      if (payload?.role !== "admin") {
+        window.location.href = "/login?admin=1&next=/admin";
+        return false;
+      }
+      return true;
+    }
+
+    if (!requireAdminOrRedirect()) {
+      // stop
     }
 
     document.getElementById("btnLogout").addEventListener("click", logout);
 
     function showError(e) {
-      msg.textContent = `ERROR: ${e.message}`;
-
-      if (e.status === 401) {
-        msg.textContent = "Session expired / token invalid. Redirecting to login...";
-        setTimeout(() => logout(), 600);
-      }
-
-      if (e.status === 403) {
-        msg.textContent = "Access denied (not admin). Login pakai akun admin.";
+      msg.textContent = `ERROR: ${e.message || e}`;
+      if (e.status === 401 || e.status === 403) {
+        window.location.href = "/login?admin=1&next=/admin";
       }
     }
 
@@ -61,7 +95,7 @@
       list.innerHTML = "";
 
       try {
-        const data = await apiFetch("/admin/currencies");
+        const data = await apiFetch("/admin/currencies"); // backend route
 
         const table = document.createElement("table");
         table.border = "1";
@@ -100,10 +134,7 @@
             try {
               await apiFetch(`/admin/currencies/${c.code}`, {
                 method: "PUT",
-                body: JSON.stringify({
-                  name: nameInput.value,
-                  status: statusSelect.value
-                })
+                body: JSON.stringify({ name: nameInput.value, status: statusSelect.value })
               });
               msg.textContent = `Updated ${c.code}`;
               await refresh();
@@ -133,49 +164,19 @@
       }
     }
 
-    // ✅ Create currency + initial rate (Opsi A)
     document.getElementById("btnCreate").onclick = async () => {
-      const code = document.getElementById("code").value.trim();
+      const code = document.getElementById("code").value.trim().toUpperCase();
       const name = document.getElementById("name").value.trim();
-
-      const base_code = (document.getElementById("base_code").value.trim() || "USD").toUpperCase();
-      const rate = Number(document.getElementById("rate").value);
+      const base_code = (document.getElementById("base_code").value.trim().toUpperCase() || "USD");
+      const rate = Number(document.getElementById("rate").value.trim());
       const rate_date = document.getElementById("rate_date").value.trim();
-
-      if (!code || code.length !== 3) {
-        msg.textContent = "ERROR: code harus 3 huruf (contoh: XAA)";
-        return;
-      }
-      if (!name) {
-        msg.textContent = "ERROR: name wajib diisi";
-        return;
-      }
-      if (!base_code || base_code.length !== 3) {
-        msg.textContent = "ERROR: base_code harus 3 huruf (contoh: USD)";
-        return;
-      }
-      if (!Number.isFinite(rate) || rate <= 0) {
-        msg.textContent = "ERROR: rate harus angka > 0";
-        return;
-      }
-      if (!rate_date || rate_date.length !== 10) {
-        msg.textContent = "ERROR: rate_date harus format YYYY-MM-DD";
-        return;
-      }
 
       try {
         await apiFetch("/admin/currencies-with-rate", {
           method: "POST",
           body: JSON.stringify({ code, name, base_code, rate, rate_date })
         });
-
         msg.textContent = "Currency + initial rate created";
-
-        // reset input
-        document.getElementById("code").value = "";
-        document.getElementById("name").value = "";
-        document.getElementById("rate").value = "";
-
         await refresh();
       } catch (e) {
         showError(e);
@@ -183,7 +184,6 @@
     };
 
     document.getElementById("btnRefresh").onclick = refresh;
-
     refresh();
   </script>
 </body>

@@ -1,56 +1,302 @@
 <!doctype html>
-<html>
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>API Explorer - Currency</title>
-  <link rel="stylesheet" href="/assets/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Penjelajah API - Platform Mata Uang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .header {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 30px 40px;
+      margin-bottom: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .header p { color: #666; font-size: 1.1rem; margin-bottom: 20px; }
+
+    .nav-links { display: flex; gap: 20px; flex-wrap: wrap; }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+    }
+
+    .nav-links a:hover {
+      background: rgba(102, 126, 234, 0.1);
+      border-color: #667eea;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover { transform: translateY(-2px); box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15); }
+
+    .card h2 {
+      color: #2d3748;
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card h2::before {
+      content: "";
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    label { font-weight: 600; color: #4a5568; font-size: 0.95rem; }
+
+    input {
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: #fff;
+      color: #2d3748;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+
+    button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); }
+    button:active { transform: translateY(0); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    button.secondary { background: #718096; box-shadow: 0 4px 15px rgba(113, 128, 150, 0.3); }
+    button.secondary:hover { box-shadow: 0 6px 20px rgba(113, 128, 150, 0.5); }
+
+    button.success { background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4); }
+    button.success:hover { box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6); }
+
+    .message { padding: 12px 16px; border-radius: 10px; margin-top: 12px; font-size: 0.95rem; }
+    .message.info { background: rgba(102, 126, 234, 0.1); color: #667eea; border: 1px solid rgba(102, 126, 234, 0.3); }
+    .message.warning { background: rgba(237, 137, 54, 0.1); color: #dd6b20; border: 1px solid rgba(237, 137, 54, 0.3); }
+    .message.error { background: rgba(245, 101, 101, 0.1); color: #c53030; border: 1px solid rgba(245, 101, 101, 0.3); }
+
+    .result-box {
+      margin-top: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td { padding: 14px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+
+    th {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+
+    tr:hover { background: rgba(102, 126, 234, 0.05); }
+
+    pre {
+      background: #2d3748;
+      color: #68d391;
+      padding: 20px;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-top: 15px;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: rgba(102, 126, 234, 0.15);
+      color: #667eea;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+
+    @media (max-width: 768px) {
+      .header h1 { font-size: 1.8rem; }
+      .card { padding: 20px; }
+      .input-group { flex-direction: column; align-items: stretch; }
+      input, button { width: 100%; }
+    }
+
+    .api-key-section {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px dashed rgba(102, 126, 234, 0.3);
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <h1>API Explorer — Currency</h1>
-  <p>Masukkan API key untuk mencoba endpoint langsung dari web.</p>
+  <div class="container">
+    <div class="header">
+      <h1>🌐 Currency API Explorer</h1>
+      <p>Platform interaktif untuk mencoba endpoint konversi mata uang dan nilai tukar</p>
+      <div class="nav-links">
+        <a href="/">🏠 Beranda</a>
+        <a href="/dashboard">📊 Dashboard</a>
+        <a href="/docs">📚 Dokumentasi</a>
+      </div>
+    </div>
 
-  <p><a href="/">Home</a> | <a href="/dashboard">Dashboard</a> | <a href="/docs">Docs</a></p>
+    <div class="card">
+      <h2>🔑 Autentikasi API</h2>
+      <div class="api-key-section">
+        <div class="input-group">
+          <input id="apiKey" placeholder="Masukkan API key Anda (sk_live_...)" style="flex: 2; min-width: 300px;" />
+          <button id="btnSave" class="success">💾 Simpan Key</button>
+          <button id="btnClear" class="secondary">🗑️ Hapus</button>
+          <button id="btnCreateKey" style="display:none;" class="success">➕ Buat API Key</button>
+        </div>
+        <p id="msgKey" class="message info" style="display:none;"></p>
+      </div>
+    </div>
 
-  <h2>API Key</h2>
+    <div class="grid">
+      <div class="card">
+        <h2>💱 Nilai Tukar Terkini</h2>
+        <p style="color: #666; margin-bottom: 20px;">Dapatkan nilai tukar terkini untuk beberapa mata uang</p>
 
-  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-    <input id="apiKey" placeholder="sk_live_..." style="width:420px" />
-    <button id="btnSave">Save Key</button>
-    <button id="btnClear">Clear</button>
+        <div style="margin-bottom: 12px;">
+          <label>Mata Uang Dasar</label>
+          <input id="base" value="USD" placeholder="contoh: USD" />
+        </div>
 
-    <!-- ✅ tombol baru -->
-    <button id="btnCreateKey" style="display:none;">Create API Key</button>
+        <div style="margin-bottom: 12px;">
+          <label>Mata Uang Tujuan</label>
+          <input id="symbols" value="IDR,EUR,SGD,JPY,GBP" placeholder="contoh: IDR,EUR,SGD" />
+        </div>
+
+        <button id="btnLatest">🔍 Lihat Nilai Tukar</button>
+
+        <div id="latestResult"></div>
+      </div>
+
+      <div class="card">
+        <h2>🔄 Konversi Mata Uang</h2>
+        <p style="color: #666; margin-bottom: 20px;">Konversi jumlah antara dua mata uang</p>
+
+        <div style="margin-bottom: 12px;">
+          <label>Dari</label>
+          <input id="from" value="USD" placeholder="USD" />
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label>Ke</label>
+          <input id="to" value="IDR" placeholder="IDR" />
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label>Jumlah</label>
+          <input id="amount" value="100" type="number" placeholder="100" />
+        </div>
+
+        <button id="btnConvert">💸 Konversi Sekarang</button>
+
+        <div id="convertResult"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Respon JSON Mentah</h2>
+      <pre id="raw">// Respon akan muncul di sini setelah melakukan permintaan...</pre>
+    </div>
   </div>
-
-  <p id="msgKey"></p>
-
-  <hr/>
-
-  <h2>Latest Rates</h2>
-  <label>Base:</label>
-  <input id="base" value="USD" />
-  <label>Symbols:</label>
-  <input id="symbols" value="IDR,EUR,SGD" style="width:220px" />
-  <button id="btnLatest">Get Latest</button>
-
-  <div id="latestResult"></div>
-
-  <hr/>
-
-  <h2>Convert</h2>
-  <label>From:</label>
-  <input id="from" value="USD" />
-  <label>To:</label>
-  <input id="to" value="IDR" />
-  <label>Amount:</label>
-  <input id="amount" value="10" />
-  <button id="btnConvert">Convert</button>
-
-  <div id="convertResult"></div>
-
-  <hr/>
-  <h2>Raw JSON</h2>
-  <pre id="raw">-</pre>
 
   <script type="module">
     async function getBackendUrl() {
@@ -73,25 +319,44 @@
     const msgKey = document.getElementById("msgKey");
     const btnCreateKey = document.getElementById("btnCreateKey");
 
+    // ✅ formatter angka Indonesia
+    function formatRate(code, value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return String(value);
+
+      const isZeroDecimal = (code === "IDR" || code === "JPY");
+      return new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: isZeroDecimal ? 0 : 2,
+        maximumFractionDigits: isZeroDecimal ? 0 : 2
+      }).format(n);
+    }
+
     function updateApiKeyUi() {
       const saved = getSavedApiKey();
       apiKeyInput.value = saved;
 
+      msgKey.style.display = "block";
       if (!saved) {
         btnCreateKey.style.display = "inline-block";
-        msgKey.textContent = "API key belum ada. Klik 'Create API Key' untuk login dan buat key.";
+        msgKey.textContent = "⚠️ API key tidak ditemukan. Klik 'Buat API Key' untuk memulai.";
+        msgKey.className = "message warning";
       } else {
         btnCreateKey.style.display = "none";
-        msgKey.textContent = "API key tersimpan (localStorage).";
+        msgKey.textContent = "✅ API key berhasil dimuat dari penyimpanan lokal";
+        msgKey.className = "message info";
       }
     }
 
-    // load awal
     updateApiKeyUi();
 
     document.getElementById("btnSave").onclick = () => {
       const k = apiKeyInput.value.trim();
-      if (!k) { msgKey.textContent = "API key kosong"; return; }
+      if (!k) {
+        msgKey.style.display = "block";
+        msgKey.textContent = "❌ Mohon masukkan API key yang valid";
+        msgKey.className = "message error";
+        return;
+      }
       saveApiKey(k);
       updateApiKeyUi();
     };
@@ -102,7 +367,6 @@
       updateApiKeyUi();
     };
 
-    // ✅ kalau belum punya API key → arahkan login dulu, habis itu ke dashboard
     btnCreateKey.onclick = () => {
       window.location.href = "/login?next=/dashboard";
     };
@@ -111,7 +375,7 @@
       const baseUrl = await getBackendUrl();
       const apiKey = apiKeyInput.value.trim() || getSavedApiKey();
 
-      if (!apiKey) throw new Error("Masukkan API key dulu atau klik 'Create API Key'.");
+      if (!apiKey) throw new Error("Mohon masukkan API key atau klik 'Buat API Key'");
 
       const res = await fetch(baseUrl + path, {
         headers: { "x-api-key": apiKey }
@@ -128,45 +392,83 @@
     function renderRatesTable(data) {
       const rates = data.rates || {};
       const rows = Object.entries(rates)
-        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
+        .map(([k, v]) => `<tr><td><strong>${k}</strong></td><td>${formatRate(k, v)}</td></tr>`)
         .join("");
 
       return `
-        <p><b>Base:</b> ${data.base} | <b>Date:</b> ${data.date}</p>
-        <table border="1" cellpadding="6">
-          <tr><th>Currency</th><th>Rate</th></tr>
-          ${rows}
-        </table>
+        <div class="result-box">
+          <p style="margin-bottom: 10px;">
+            <strong>Mata Uang Dasar:</strong> <span class="badge">${data.base}</span>
+            <strong>Tanggal:</strong> ${data.date}
+          </p>
+          <table>
+            <thead>
+              <tr><th>Mata Uang</th><th>Nilai Tukar</th></tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
       `;
     }
 
     document.getElementById("btnLatest").onclick = async () => {
+      const btn = document.getElementById("btnLatest");
       const base = document.getElementById("base").value.trim().toUpperCase();
       const symbols = document.getElementById("symbols").value.trim().toUpperCase();
+
+      btn.innerHTML = '🔍 Memuat <span class="loading"></span>';
+      btn.disabled = true;
 
       try {
         const data = await callCurrencyApi(`/api/v1/currency/latest?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(symbols)}`);
         document.getElementById("latestResult").innerHTML = renderRatesTable(data);
         document.getElementById("raw").textContent = JSON.stringify(data, null, 2);
       } catch (e) {
-        document.getElementById("latestResult").innerHTML = `<p style="color:red">${e.message}</p>`;
+        document.getElementById("latestResult").innerHTML = `
+          <div class="result-box">
+            <p class="message error">❌ ${e.message}</p>
+          </div>
+        `;
+      } finally {
+        btn.innerHTML = '🔍 Lihat Nilai Tukar';
+        btn.disabled = false;
       }
     };
 
     document.getElementById("btnConvert").onclick = async () => {
+      const btn = document.getElementById("btnConvert");
       const from = document.getElementById("from").value.trim().toUpperCase();
       const to = document.getElementById("to").value.trim().toUpperCase();
       const amount = document.getElementById("amount").value.trim();
 
+      btn.innerHTML = '💸 Mengkonversi <span class="loading"></span>';
+      btn.disabled = true;
+
       try {
         const data = await callCurrencyApi(`/api/v1/currency/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}`);
+
         document.getElementById("convertResult").innerHTML = `
-          <p><b>${data.amount} ${data.from}</b> = <b>${data.result} ${data.to}</b></p>
-          <p>Rate: ${data.rate} | Date: ${data.date}</p>
+          <div class="result-box">
+            <div style="font-size: 1.3rem; font-weight: 700; color: #2d3748; margin-bottom: 15px;">
+              ${formatRate(from, data.amount)} ${data.from}
+              = <span style="color: #667eea;">${formatRate(to, data.result)} ${data.to}</span>
+            </div>
+            <p><strong>Nilai Tukar:</strong> ${formatRate(to, data.rate)}</p>
+            <p><strong>Tanggal:</strong> ${data.date}</p>
+          </div>
         `;
         document.getElementById("raw").textContent = JSON.stringify(data, null, 2);
       } catch (e) {
-        document.getElementById("convertResult").innerHTML = `<p style="color:red">${e.message}</p>`;
+        document.getElementById("convertResult").innerHTML = `
+          <div class="result-box">
+            <p class="message error">❌ ${e.message}</p>
+          </div>
+        `;
+      } finally {
+        btn.innerHTML = '💸 Konversi Sekarang';
+        btn.disabled = false;
       }
     };
   </script>
