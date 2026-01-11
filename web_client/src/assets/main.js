@@ -6,6 +6,15 @@ export async function getBackendUrl() {
 
 export function saveToken(token) {
   localStorage.setItem("jwt_token", token);
+
+  // set current user id
+  const p = parseJwt(token);
+  const userId = p?.userId ?? p?.user_id ?? p?.id ?? null;
+  if (userId !== null && userId !== undefined) {
+    localStorage.setItem("current_user_id", String(userId));
+    // migrasi key lama (demo_api_key) ke storage per user
+    migrateLegacyApiKey(String(userId));
+  }
 }
 
 export function getToken() {
@@ -14,10 +23,10 @@ export function getToken() {
 
 export function logout() {
   localStorage.removeItem("jwt_token");
+  localStorage.removeItem("current_user_id");
   window.location.href = "/login";
 }
 
-// ✅ FIX: base64url decode + padding
 export function parseJwt(token) {
   try {
     const part = token.split(".")[1];
@@ -34,6 +43,43 @@ export function getRoleFromToken() {
   if (!t) return null;
   const p = parseJwt(t);
   return p?.role || null;
+}
+
+export function getCurrentUserId() {
+  return localStorage.getItem("current_user_id");
+}
+
+// API key per user 
+export function getUserApiKey(userId) {
+  if (!userId) return "";
+  return localStorage.getItem(`demo_api_key_user_${userId}`) || "";
+}
+
+export function setUserApiKey(userId, apiKey) {
+  if (!userId) return;
+  localStorage.setItem(`demo_api_key_user_${userId}`, apiKey);
+}
+
+export function clearUserApiKey(userId) {
+  if (!userId) return;
+  localStorage.removeItem(`demo_api_key_user_${userId}`);
+}
+
+//  Migrasi key lama dari storage global (demo_api_key) ke per-user
+export function migrateLegacyApiKey(userId) {
+  if (!userId) return;
+
+  const perUserKey = getUserApiKey(userId);
+  if (perUserKey) return; // sudah ada, tidak perlu migrasi
+
+  const legacy = (localStorage.getItem("demo_api_key") || "").trim();
+  if (!legacy) return;
+
+  // pindahkan legacy key ke per-user
+  setUserApiKey(userId, legacy);
+
+  // hapus key global supaya akun lain tidak bisa “nebeng”
+  localStorage.removeItem("demo_api_key");
 }
 
 export async function apiFetch(path, options = {}) {

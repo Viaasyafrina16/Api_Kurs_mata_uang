@@ -4,7 +4,280 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Open Currency Platform</title>
-  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .header {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 30px 40px;
+      margin-bottom: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+    }
+
+    .nav-links a:hover {
+      background: rgba(102, 126, 234, 0.1);
+      border-color: #667eea;
+    }
+
+    .btn-logout {
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #f56565 0%, #c53030 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
+    }
+
+    .btn-logout:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 101, 101, 0.5);
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+    }
+
+    .card h2 {
+      color: #2d3748;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card h2::before {
+      content: "";
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+    }
+
+    .card h3 {
+      color: #2d3748;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    .quota-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 15px;
+    }
+
+    .quota-item {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .quota-item label {
+      display: block;
+      font-weight: 600;
+      color: #4a5568;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .quota-item .value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 5px;
+    }
+
+    .quota-item small {
+      color: #666;
+      font-size: 0.85rem;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: #4a5568;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: #fff;
+      color: #2d3748;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    button:active { transform: translateY(0); }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    button.success {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+    }
+
+    button.success:hover {
+      box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6);
+    }
+
+    .key-display {
+      background: #2d3748;
+      color: #68d391;
+      padding: 15px 20px;
+      border-radius: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95rem;
+      overflow-x: auto;
+      margin-bottom: 15px;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.2);
+      word-break: break-all;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 0.95rem;
+    }
+
+    .message.info {
+      background: rgba(102, 126, 234, 0.1);
+      color: #667eea;
+      border: 1px solid rgba(102, 126, 234, 0.3);
+    }
+
+    .message.error {
+      background: rgba(245, 101, 101, 0.1);
+      color: #c53030;
+      border: 1px solid rgba(245, 101, 101, 0.3);
+    }
+
+    .message.success {
+      background: rgba(72, 187, 120, 0.1);
+      color: #38a169;
+      border: 1px solid rgba(72, 187, 120, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .header h1 { font-size: 1.8rem; }
+      .card { padding: 20px; }
+      .header-top { flex-direction: column; align-items: stretch; }
+      .nav-links { justify-content: center; }
+      .quota-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -17,10 +290,6 @@
           <button id="btnLogout" class="btn-logout">🚪 Logout</button>
         </div>
       </div>
-      <div class="stats-bar">
-        <strong>📈 Total kunjungan halaman:</strong>
-        <span class="count" id="visitCount">0</span>
-      </div>
     </div>
 
     <div class="card">
@@ -29,12 +298,12 @@
         <div class="quota-item">
           <label>Kuota per API Key</label>
           <div class="value" id="quotaLimitText">100</div>
-          <small style="color:#666;">total request (tidak reset harian)</small>
+          <small style="color:#666;">total request</small>
         </div>
         <div class="quota-item">
           <label>Sisa Kuota</label>
           <div class="value" id="quotaRemainText">-</div>
-          <small style="color:#666;">untuk API key terakhir</small>
+          <small style="color:#666;">berdasarkan API key akun ini</small>
         </div>
       </div>
       <p id="quotaMsg" class="message error" style="display:none;"></p>
@@ -50,7 +319,7 @@
       <button id="btnCreate">✨ Create Key</button>
 
       <div style="margin-top:25px;">
-        <h3 style="color:#2d3748; font-size:1.1rem; margin-bottom:10px;">🔐 New Key (simpan sekarang)</h3>
+        <h3 style="color:#2d3748; font-size:1.1rem; margin-bottom:10px;">🔐 API Key Akun Ini</h3>
         <div class="key-display" id="newKey">-</div>
 
         <div class="button-group">
@@ -65,29 +334,24 @@
   </div>
 
   <script type="module">
-    import { apiFetch, getToken, logout } from "/assets/main.js";
+    import {
+      apiFetch, getToken, logout,
+      getCurrentUserId, getUserApiKey, setUserApiKey
+    } from "/assets/main.js";
 
     const msg = document.getElementById("msg");
     const newKey = document.getElementById("newKey");
     const btnOpenExplorer = document.getElementById("btnOpenExplorer");
-    const visitCount = document.getElementById("visitCount");
 
     const quotaLimitText = document.getElementById("quotaLimitText");
     const quotaRemainText = document.getElementById("quotaRemainText");
     const quotaMsg = document.getElementById("quotaMsg");
 
-    // visit counter
-    (function countVisit() {
-      const key = "visits_user_dashboard";
-      const n = Number(localStorage.getItem(key) || "0") + 1;
-      localStorage.setItem(key, String(n));
-      visitCount.textContent = String(n);
-    })();
-
-    // guard login
     if (!getToken()) {
       window.location.href = "/login?next=/dashboard";
     }
+
+    const userId = getCurrentUserId();
 
     document.getElementById("btnLogout").addEventListener("click", logout);
 
@@ -95,11 +359,6 @@
       const r = await fetch("/config");
       const j = await r.json();
       return j.backendUrl;
-    }
-
-    function persistLastApiKey(apiKey) {
-      localStorage.setItem("demo_api_key", apiKey);
-      sessionStorage.setItem("last_created_api_key", apiKey);
     }
 
     async function refreshQuotaForKey(apiKey) {
@@ -123,7 +382,6 @@
           return;
         }
 
-        // ✅ field baru
         quotaLimitText.textContent = String(data.limit_total ?? 100);
         quotaRemainText.textContent = String(data.remaining_total ?? "-");
         quotaMsg.style.display = "none";
@@ -134,12 +392,13 @@
       }
     }
 
-    async function showLastKeyUI() {
-      const last = sessionStorage.getItem("last_created_api_key");
-      if (last && last.trim()) {
-        newKey.textContent = last;
+    async function refreshUI() {
+      const key = getUserApiKey(userId);
+
+      if (key) {
+        newKey.textContent = key;
         btnOpenExplorer.style.display = "inline-block";
-        await refreshQuotaForKey(last);
+        await refreshQuotaForKey(key);
       } else {
         newKey.textContent = "-";
         btnOpenExplorer.style.display = "none";
@@ -156,6 +415,8 @@
       const label = labelInput.value.trim();
 
       msg.textContent = "Creating key...";
+      quotaMsg.style.display = "none";
+
       const btn = document.getElementById("btnCreate");
       btn.disabled = true;
 
@@ -171,23 +432,20 @@
           return;
         }
 
-        persistLastApiKey(apiKey);
-
-        newKey.textContent = apiKey;
-        btnOpenExplorer.style.display = "inline-block";
+        // ✅ SIMPAN PER USER
+        setUserApiKey(userId, apiKey);
 
         labelInput.value = "";
-        await refreshQuotaForKey(apiKey);
-
         msg.textContent = "✅ Key created & saved. Klik 'Buka Explorer'.";
+        await refreshUI();
       } catch (err) {
-        msg.textContent = "❌ Create failed: " + err.message;
+        msg.textContent = `❌ ${err.message}`;
       } finally {
         btn.disabled = false;
       }
     });
 
-    await showLastKeyUI();
+    await refreshUI();
   </script>
 </body>
 </html>

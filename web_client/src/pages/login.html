@@ -4,7 +4,90 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Open Currency Platform</title>
-  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #333;
+    }
+    .login-container { width: 100%; max-width: 450px; }
+    .card {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      margin-bottom: 20px;
+    }
+    .header { text-align: center; margin-bottom: 30px; }
+    .header h1 {
+      font-size: 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .header p { color: #666; font-size: 1rem; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; color: #4a5568; font-size: 0.95rem; margin-bottom: 8px; }
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: #fff;
+      color: #2d3748;
+    }
+    input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    .button-group { display: flex; gap: 12px; margin-top: 25px; }
+    button {
+      flex: 1;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    button.secondary { background: #718096; box-shadow: 0 4px 15px rgba(113, 128, 150, 0.3); }
+    .message { padding: 12px 16px; border-radius: 10px; margin-top: 15px; font-size: 0.95rem; display: none; }
+    .message.show { display: block; }
+    .message.error { background: rgba(245, 101, 101, 0.1); color: #c53030; border: 1px solid rgba(245, 101, 101, 0.3); }
+    .message.success { background: rgba(72, 187, 120, 0.1); color: #38a169; border: 1px solid rgba(72, 187, 120, 0.3); }
+    .back-link { text-align: center; }
+    .back-link a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+    @media (max-width: 768px) {
+      .card { padding: 30px 25px; }
+      .button-group { flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
   <div class="login-container">
@@ -51,21 +134,18 @@
 
     const qs = new URLSearchParams(window.location.search);
     const adminMode = qs.get("admin") === "1";
-    const next = qs.get("next"); // optional
+    const next = qs.get("next");
 
-    function showMessage(text, type = "info") {
+    function showMessage(text, type = "success") {
       msg.textContent = text;
       msg.className = `message show ${type}`;
     }
 
-    // UI mode
     if (adminMode) {
       title.textContent = "🔐 Login Admin";
       subtitle.textContent = "Masuk sebagai Administrator";
       btnSignup.style.display = "none";
     } else {
-      title.textContent = "🔐 Login";
-      subtitle.textContent = "Masuk ke akun Currency Platform Anda";
       btnSignup.style.display = "inline-block";
     }
 
@@ -90,38 +170,33 @@
         });
 
         if (!data?.token) {
-          showMessage("❌ Login gagal: token tidak ditemukan.", "error");
+          showMessage("❌ Token tidak ditemukan.", "error");
           btnLogin.textContent = originalText;
           btnLogin.disabled = false;
           return;
         }
 
-        // simpan token
+        //  simpan token + set current_user_id di main.js
         saveToken(data.token);
 
-        // ambil role dari token yang sudah tersimpan
         const role = getRoleFromToken();
 
-        // adminMode: wajib admin
         if (adminMode && role !== "admin") {
           showMessage("❌ Akun ini bukan admin.", "error");
           setTimeout(() => logout(), 400);
-          btnLogin.textContent = originalText;
-          btnLogin.disabled = false;
           return;
         }
 
-        // redirect sesuai role
         if (role === "admin") {
-          showMessage("✅ Login admin berhasil! Redirecting...", "success");
+          showMessage("✅ Login admin berhasil!", "success");
           window.location.assign("/admin");
         } else {
           const target = next || "/dashboard";
-          showMessage("✅ Login berhasil! Redirecting...", "success");
+          showMessage("✅ Login berhasil!", "success");
           window.location.assign(target);
         }
       } catch (err) {
-        showMessage("❌ Login gagal: " + err.message, "error");
+        showMessage("❌ " + err.message, "error");
         btnLogin.textContent = originalText;
         btnLogin.disabled = false;
       }

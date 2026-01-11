@@ -73,7 +73,7 @@ export async function convert(req, res) {
 }
 
 // GET /api/v1/currency/quota  (header: x-api-key)
-// ✅ TOTAL QUOTA per API key (bukan per hari)
+// TOTAL QUOTA per API key 
 export async function quota(req, res) {
   try {
     const apiKeyId = req.apiKey?.id;

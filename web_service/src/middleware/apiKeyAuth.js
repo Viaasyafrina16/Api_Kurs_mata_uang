@@ -38,10 +38,10 @@ export async function apiKeyAuth(req, res, next) {
         });
       }
 
-      // ✅ kalau endpoint quota, jangan mengurangi kuota
+      //  kalau endpoint quota, jangan mengurangi kuota
       const isQuotaEndpoint = req.originalUrl?.includes("/api/v1/currency/quota");
 
-      // ✅ log pemakaian SEKARANG (agar kuota langsung akurat), kecuali endpoint quota
+      //  log pemakaian SEKARANG (agar kuota langsung akurat), kecuali endpoint quota
       if (!isQuotaEndpoint) {
         await pool.query(
           `INSERT INTO usage_logs (api_key_id, endpoint, method, status_code)

@@ -26,7 +26,7 @@ app.get("/signup", (req, res) => sendPage(res, "signup.html"));
 app.get("/dashboard", (req, res) => sendPage(res, "dashboard.html"));
 app.get("/explorer", (req, res) => sendPage(res, "explorer.html"));
 
-/** ✅ ADMIN PANEL (currencies) */
+/** ADMIN PANEL (currencies) */
 app.get("/admin", (req, res) => sendPage(res, "admin.html"));
 app.get("/admin-rates", (req, res) => sendPage(res, "admin-rates.html"));
 

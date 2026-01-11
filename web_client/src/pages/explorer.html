@@ -222,6 +222,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
+
 <body>
   <div class="container">
     <div class="header">
@@ -293,33 +294,39 @@
     </div>
 
     <div class="card">
-      <h2>📋 Respon JSON Mentah</h2>
+      <h2>📋Data Respon</h2>
       <pre id="raw">// Respon akan muncul di sini setelah melakukan permintaan...</pre>
     </div>
   </div>
 
   <script type="module">
+    import {
+      getToken,
+      getCurrentUserId,
+      getUserApiKey,
+      setUserApiKey,
+      clearUserApiKey,
+      migrateLegacyApiKey
+    } from "/assets/main.js";
+
     async function getBackendUrl() {
       const res = await fetch("/config");
       const data = await res.json();
       return data.backendUrl;
     }
 
-    function getSavedApiKey() {
-      return localStorage.getItem("demo_api_key") || "";
-    }
-    function saveApiKey(k) {
-      localStorage.setItem("demo_api_key", k);
-    }
-    function clearApiKey() {
-      localStorage.removeItem("demo_api_key");
+    const token = getToken();
+    const userId = getCurrentUserId();
+
+    
+    if (userId) {
+      migrateLegacyApiKey(userId);
     }
 
     const apiKeyInput = document.getElementById("apiKey");
     const msgKey = document.getElementById("msgKey");
     const btnCreateKey = document.getElementById("btnCreateKey");
 
-    // ✅ formatter angka Indonesia
     function formatRate(code, value) {
       const n = Number(value);
       if (!Number.isFinite(n)) return String(value);
@@ -331,18 +338,43 @@
       }).format(n);
     }
 
+    function getSavedApiKey() {
+      if (!userId) return "";
+      return getUserApiKey(userId) || "";
+    }
+    function saveApiKey(k) {
+      if (!userId) return;
+      setUserApiKey(userId, k);
+    }
+    function clearApiKey() {
+      if (!userId) return;
+      clearUserApiKey(userId);
+    }
+
     function updateApiKeyUi() {
+      msgKey.style.display = "block";
+
+      if (!token || !userId) {
+        apiKeyInput.value = "";
+        apiKeyInput.disabled = true;
+        btnCreateKey.style.display = "inline-block";
+        msgKey.textContent = "⚠️ Anda belum login. Silakan login dulu agar API key terikat ke akun.";
+        msgKey.className = "message warning";
+        return;
+      }
+
+      apiKeyInput.disabled = false;
+
       const saved = getSavedApiKey();
       apiKeyInput.value = saved;
 
-      msgKey.style.display = "block";
       if (!saved) {
         btnCreateKey.style.display = "inline-block";
-        msgKey.textContent = "⚠️ API key tidak ditemukan. Klik 'Buat API Key' untuk memulai.";
+        msgKey.textContent = "⚠️ API key akun ini belum ada. Klik 'Buat API Key' untuk menuju Dashboard.";
         msgKey.className = "message warning";
       } else {
         btnCreateKey.style.display = "none";
-        msgKey.textContent = "✅ API key berhasil dimuat dari penyimpanan lokal";
+        msgKey.textContent = "✅ API key akun ini berhasil dimuat.";
         msgKey.className = "message info";
       }
     }
@@ -350,11 +382,16 @@
     updateApiKeyUi();
 
     document.getElementById("btnSave").onclick = () => {
+      if (!token || !userId) {
+        updateApiKeyUi();
+        return;
+      }
+
       const k = apiKeyInput.value.trim();
       if (!k) {
-        msgKey.style.display = "block";
         msgKey.textContent = "❌ Mohon masukkan API key yang valid";
         msgKey.className = "message error";
+        msgKey.style.display = "block";
         return;
       }
       saveApiKey(k);
@@ -362,20 +399,30 @@
     };
 
     document.getElementById("btnClear").onclick = () => {
+      if (!token || !userId) {
+        updateApiKeyUi();
+        return;
+      }
       clearApiKey();
       apiKeyInput.value = "";
       updateApiKeyUi();
     };
 
     btnCreateKey.onclick = () => {
-      window.location.href = "/login?next=/dashboard";
+      if (!token || !userId) {
+        window.location.href = "/login?next=/dashboard";
+        return;
+      }
+      window.location.href = "/dashboard";
     };
 
     async function callCurrencyApi(path) {
       const baseUrl = await getBackendUrl();
-      const apiKey = apiKeyInput.value.trim() || getSavedApiKey();
 
-      if (!apiKey) throw new Error("Mohon masukkan API key atau klik 'Buat API Key'");
+      if (!token || !userId) throw new Error("Silakan login dulu.");
+
+      const apiKey = apiKeyInput.value.trim() || getSavedApiKey();
+      if (!apiKey) throw new Error("API key kosong. Buat API key dulu di Dashboard.");
 
       const res = await fetch(baseUrl + path, {
         headers: { "x-api-key": apiKey }
@@ -402,12 +449,8 @@
             <strong>Tanggal:</strong> ${data.date}
           </p>
           <table>
-            <thead>
-              <tr><th>Mata Uang</th><th>Nilai Tukar</th></tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
+            <thead><tr><th>Mata Uang</th><th>Nilai Tukar</th></tr></thead>
+            <tbody>${rows}</tbody>
           </table>
         </div>
       `;
@@ -427,9 +470,7 @@
         document.getElementById("raw").textContent = JSON.stringify(data, null, 2);
       } catch (e) {
         document.getElementById("latestResult").innerHTML = `
-          <div class="result-box">
-            <p class="message error">❌ ${e.message}</p>
-          </div>
+          <div class="result-box"><p class="message error">❌ ${e.message}</p></div>
         `;
       } finally {
         btn.innerHTML = '🔍 Lihat Nilai Tukar';
@@ -448,7 +489,6 @@
 
       try {
         const data = await callCurrencyApi(`/api/v1/currency/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}`);
-
         document.getElementById("convertResult").innerHTML = `
           <div class="result-box">
             <div style="font-size: 1.3rem; font-weight: 700; color: #2d3748; margin-bottom: 15px;">
@@ -462,9 +502,7 @@
         document.getElementById("raw").textContent = JSON.stringify(data, null, 2);
       } catch (e) {
         document.getElementById("convertResult").innerHTML = `
-          <div class="result-box">
-            <p class="message error">❌ ${e.message}</p>
-          </div>
+          <div class="result-box"><p class="message error">❌ ${e.message}</p></div>
         `;
       } finally {
         btn.innerHTML = '💸 Konversi Sekarang';
